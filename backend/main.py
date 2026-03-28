@@ -53,7 +53,7 @@ def save_data(data: dict):
 
 # ── AI client (Gemini) ──────────────────────────────────────────────────────
 
-GEMINI_API_KEY="AIzaSyAWlTpINRAyzzt_UWy-mNSgyhVz85ttOPY"
+GEMINI_API_KEY="AIzaSyAWa7kT0l-dLBBFP9Z1t_7G9smKUs1D5Wg"
 if not GEMINI_API_KEY:
     raise RuntimeError("GEMINI_API_KEY is not set in environment variables.")
 
