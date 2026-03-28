@@ -157,6 +157,3 @@
 .fade-in {
   animation: fadeIn 0.35s ease forwards;
 }
-body {
-  cursor: none;
-}
