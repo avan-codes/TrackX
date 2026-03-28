@@ -1,0 +1,34 @@
+{
+  "students": [],
+  "plans": [
+    {
+      "student_name": "Pranjal",
+      "subject": "ML",
+      "timestamp": "2026-03-28T18:55:17.602749",
+      "preview": "Hey Pranjal! Welcome to TrackX, your personalized study companion. I've crafted a 4-week study plan specifically for you, designed to elevate you from a beginner in ML to a job-ready candidate, with a"
+    }
+  ],
+  "sessions": [
+    {
+      "timestamp": "2026-03-28T18:54:16.986895",
+      "student": "string"
+    },
+    
+    {
+      "timestamp": "2026-03-28T18:57:15.877963",
+      "student": "anonymous"
+    },
+    {
+      "timestamp": "2026-03-28T19:01:02.594869",
+      "student": "anonymous"
+    },
+    {
+      "timestamp": "2026-03-28T19:01:12.012420",
+      "student": "anonymous"
+    },
+    {
+      "timestamp": "2026-03-28T19:01:31.161490",
+      "student": "anonymous"
+    }
+  ]
+}
