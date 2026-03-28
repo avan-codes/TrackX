@@ -4,12 +4,12 @@ from pydantic import BaseModel
 from typing import Optional, List
 import json
 import os
+import re
 from datetime import datetime
 import base64
 from io import BytesIO
 
-from google import genai
-from google.genai import types
+from ollamafreeapi import OllamaFreeAPI
 
 # PDF generation
 try:
@@ -51,36 +51,57 @@ def save_data(data: dict):
         json.dump(data, f, indent=2, default=str, ensure_ascii=False)
 
 
-# ── AI client (Gemini) ──────────────────────────────────────────────────────
+# ── AI client (OllamaFreeAPI) ─────────────────────────────────────────────
 
-GEMINI_API_KEY="AIzaSyAym1AesaCReWzo4U5Pr5KLDvvTBeis2L8"
-if not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY is not set in environment variables.")
-
-client = genai.Client(api_key=GEMINI_API_KEY)
-
-# Stable current model choice
-GEMINI_MODEL = "gemini-2.5-flash"
+client = OllamaFreeAPI()
+OLLAMA_MODEL = "gpt-oss:20b"
 
 
 def call_gemini(prompt: str, system: str = "", max_tokens: int = 2500) -> str:
     """
-    Helper to call Gemini with system instruction and prompt.
-    Returns the generated text.
+    Drop-in replacement using OllamaFreeAPI.
+    Prepends system prompt into the prompt string (same behavior as before).
     """
-    config_kwargs = {
-        "max_output_tokens": max_tokens,
-        "temperature": 0.7,
-    }
-    if system:
-        config_kwargs["system_instruction"] = system
+    try:
+        full_prompt = f"{system}\n\n{prompt}" if system else prompt
 
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(**config_kwargs),
-    )
-    return (response.text or "").strip()
+        response = client.chat(
+            model=OLLAMA_MODEL,
+            prompt=full_prompt,
+            temperature=0.7,
+        )
+
+        if not response:
+            raise HTTPException(status_code=500, detail="OllamaFreeAPI returned empty response.")
+
+        # response is a plain string
+        return str(response).strip()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OllamaFreeAPI error: {str(e)}")
+
+
+def extract_json_from_text(text: str) -> str:
+    """
+    Robustly extract JSON from LLM output.
+    Handles: raw JSON, ```json ... ```, ``` ... ```, or JSON embedded in prose.
+    """
+    # Remove markdown code fences
+    text = text.strip()
+    
+    # Pattern: ```json ... ``` or ``` ... ```
+    fence_match = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
+    if fence_match:
+        return fence_match.group(1).strip()
+
+    # Try to find a JSON object directly
+    brace_match = re.search(r"(\{[\s\S]*\})", text)
+    if brace_match:
+        return brace_match.group(1).strip()
+
+    return text  # Return as-is, let json.loads fail with a useful error
 
 
 # ── Models ───────────────────────────────────────────────────────────────────
@@ -231,10 +252,7 @@ Generate a Markdown study plan with:
 
 Be specific, practical, and genuinely useful. Avoid generic advice."""
 
-    try:
-        plan_text = call_gemini(prompt=prompt, max_tokens=2500)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gemini plan generation failed: {str(e)}")
+    plan_text = call_gemini(prompt=prompt, max_tokens=2500)
 
     data = load_data()
     data["plans"].append(
@@ -265,7 +283,7 @@ Create:
 - 5 application/problem-solving questions (medium)
 - 5 challenge questions (medium-hard)
 
-Return ONLY this JSON (no markdown, no explanation):
+Return ONLY valid JSON (no markdown, no explanation, no code fences):
 {{
   "student": "{student.name}",
   "subject": "{student.subject}",
@@ -282,19 +300,13 @@ Return ONLY this JSON (no markdown, no explanation):
   ]
 }}"""
 
-    try:
-        raw = call_gemini(prompt=prompt, max_tokens=2500).strip()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gemini question generation failed: {str(e)}")
+    raw = call_gemini(prompt=prompt, max_tokens=2500)
 
-    if raw.startswith("```"):
-        raw = raw.split("```", 2)[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-        raw = raw.strip()
+    # Robust JSON extraction
+    clean_json = extract_json_from_text(raw)
 
     try:
-        questions_data = json.loads(raw)
+        questions_data = json.loads(clean_json)
 
         pdf_lines = [f"Question Set — {student.subject}", f"Generated for: {student.name}", ""]
         for q in questions_data.get("questions", []):
@@ -313,8 +325,14 @@ Return ONLY this JSON (no markdown, no explanation):
 
         return {"questions": questions_data, "pdf": pdf_b64, "format": "json+pdf"}
 
-    except json.JSONDecodeError:
-        return {"questions": raw, "pdf": "", "format": "text"}
+    except json.JSONDecodeError as e:
+        # Don't crash — return raw text so frontend can still display something
+        return {
+            "questions": raw,
+            "pdf": "",
+            "format": "text",
+            "parse_error": str(e)
+        }
 
 
 @app.post("/api/chat")
@@ -340,14 +358,11 @@ Never be generic — tailor every response to the student's context."""
             conversation += f"{h['role'].capitalize()}: {h['content']}\n\n"
     conversation += f"User: {ctx + data.message}"
 
-    try:
-        response_text = call_gemini(
-            prompt=conversation,
-            system=system,
-            max_tokens=1200,
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gemini chat failed: {str(e)}")
+    response_text = call_gemini(
+        prompt=conversation,
+        system=system,
+        max_tokens=1200,
+    )
 
     db = load_data()
     db["sessions"].append(
@@ -374,36 +389,33 @@ async def extra_fun(student: StudentData):
 
 Build a creative power report with these sections:
 
-## ⚡ Power Profile
+## Power Profile
 Give {student.name} a cool "Learner Archetype" title (e.g., "The Code Samurai", "The Math Mage") and a short description.
 
-## 🧠 Learning Superpower
+## Learning Superpower
 What's their unique learning superpower based on their style?
 
-## 📊 XP Status
+## XP Status
 Create a fun ASCII-style progress bar and current XP level (make up fun level names).
 
-## 🗡️ Weekly Quests
+## Weekly Quests
 3 specific, achievable quests for this week based on their subject and weak topics.
 
-## 🏆 Boss Level Unlocked
+## Boss Level Unlocked
 What big goal/milestone will they unlock by end of month?
 
-## 🎖️ Badges Available
+## Badges Available
 5 badges they can earn (with emoji icons and unlock conditions).
 
-## ⚔️ Battle Cry
+## Battle Cry
 A short, punchy, personalized motivational line.
 
 Make it genuinely fun and energetic — not generic. Use the student's actual subject and goals."""
 
-    try:
-        content = call_gemini(prompt=prompt, max_tokens=1500)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gemini extra-fun failed: {str(e)}")
+    content = call_gemini(prompt=prompt, max_tokens=1500)
 
     pdf_b64 = make_pdf(
-        f"⚡ TrackX Power Report",
+        "TrackX Power Report",
         content,
         subtitle=f"{student.name} • {datetime.now().strftime('%B %Y')}",
     )
