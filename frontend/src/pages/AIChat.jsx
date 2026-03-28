@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Send, MessageSquare, Settings, X, Bot, User } from 'lucide-react'
 import MarkdownRenderer from '../components/MarkdownRenderer'
 
-const API = '/api'
+const API = 'https://track-x-backend.vercel.app/api'
 
 const SUGGESTIONS = [
   'Create a 1-week revision plan for me',
