@@ -1,6 +1,5 @@
 fastapi
-uvicorn
-google.generativeai
+uvicorn[standard]
 pydantic
+google-genai
 reportlab
-python-multipart
