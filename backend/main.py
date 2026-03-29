@@ -423,3 +423,44 @@ Make it genuinely fun and energetic — not generic. Use the student's actual su
     )
 
     return {"content": content, "pdf": pdf_b64, "format": "markdown+pdf"}
+
+@app.post("/ai/chat")
+async def ai_chat(data: ChatMessage):
+  async def chat(data: ChatMessage):
+    system = """You are TrackX AI — a sharp, motivational, and slightly playful study assistant.
+Help students with plans, tips, concept explanations, and motivation.
+Be specific and concise. Use markdown formatting.
+When relevant, add gamification elements: XP, streaks, daily challenges.
+Never be generic — tailor every response to the student's context."""
+
+    ctx = ""
+    if data.student_data:
+        s = data.student_data
+        ctx = (
+            f"[Student context: {s.name}, studying {s.subject}, "
+            f"level: {s.current_level}, goal: {s.goal}, "
+            f"weak topics: {s.weak_topics}]\n\n"
+        )
+
+    conversation = ""
+    for h in data.history or []:
+        if h.get("role") in ("user", "assistant"):
+            conversation += f"{h['role'].capitalize()}: {h['content']}\n\n"
+    conversation += f"User: {ctx + data.message}"
+
+    response_text = call_gemini(
+        prompt=conversation,
+        system=system,
+        max_tokens=1200,
+    )
+
+    db = load_data()
+    db["sessions"].append(
+        {
+            "timestamp": datetime.now().isoformat(),
+            "student": data.student_data.name if data.student_data else "anonymous",
+        }
+    )
+    save_data(db)
+
+    return await chat(data)
