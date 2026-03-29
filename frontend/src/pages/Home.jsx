@@ -4,7 +4,7 @@ import { ArrowRight, BookOpen, MessageSquare, Sparkles, X, BarChart2 } from 'luc
 import StudentForm from '../components/StudentForm'
 import MarkdownRenderer from '../components/MarkdownRenderer'
 
-const API = '/api'
+const API = 'https://track-x-backend-8fgp2sf04-pranjalsaini369s-projects.vercel.app/api'
 
 const features = [
   {
