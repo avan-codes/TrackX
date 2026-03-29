@@ -29,7 +29,7 @@ app = FastAPI(title="TrackX API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://track-x-pro.vercel.app/"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
