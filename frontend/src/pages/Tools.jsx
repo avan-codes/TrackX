@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Download, Eye, BookOpen, ChevronDown, ChevronUp } from 'lucide-react'
 import StudentForm from '../components/StudentForm'
 
-const API = 'https://track-x-backend.vercel.app/api'
+const API = 'https://track-x-backend-8fgp2sf04-pranjalsaini369s-projects.vercel.app/api'
 
 const DIFF_COLORS = {
   easy:   'text-emerald-400 bg-emerald-400/10',
