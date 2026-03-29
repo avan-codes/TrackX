@@ -3,7 +3,7 @@ import { Sparkles, Download, Eye, Zap } from 'lucide-react'
 import StudentForm from '../components/StudentForm'
 import MarkdownRenderer from '../components/MarkdownRenderer'
 
-const API = 'https://track-x-backend.vercel.app/api'
+const API = 'https://track-x-backend-8fgp2sf04-pranjalsaini369s-projects.vercel.app/api'
 
 export default function ExtraFun() {
   const [loading, setLoading] = useState(false)
