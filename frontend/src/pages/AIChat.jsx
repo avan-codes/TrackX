@@ -3,7 +3,7 @@ import { Send, MessageSquare, Settings, X, Bot, User } from 'lucide-react'
 import MarkdownRenderer from '../components/MarkdownRenderer'
 
 // const API = 'https://track-x-backend-8fgp2sf04-pranjalsaini369s-projects.vercel.app/api'
-const API = 'http://127.0.0.1:8000/api'
+const API = 'https://backend-latest-21tb.onrender.com/api'
 
 const SUGGESTIONS = [
   'Create a 1-week revision plan for me',
