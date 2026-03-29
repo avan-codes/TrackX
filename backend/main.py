@@ -25,6 +25,8 @@ except ImportError:
 
 app = FastAPI(title="TrackX API", version="1.0.0")
 
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
