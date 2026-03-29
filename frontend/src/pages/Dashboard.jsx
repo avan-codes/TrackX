@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { BookOpen, MessageSquare, Sparkles, BarChart2, Users, FileText, Clock } from 'lucide-react'
 
-const API = 'https://track-x-backend.vercel.app/api'
+const API = 'https://track-x-backend-8fgp2sf04-pranjalsaini369s-projects.vercel.app/api'
 
 const quickActions = [
   { to: '/',          icon: <BarChart2 size={16} />,    label: 'New Plan',          desc: 'Generate a study plan' },
